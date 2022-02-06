@@ -1,0 +1,181 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<script type="text/javascript">
+			var screen = null;
+			var player = null; 
+			var wal = null;
+			var alien_col = 5;
+			var alien_row = 3;   
+			var max_bullets = 100;             
+
+			async function startGame(){
+
+				let cachedModule = (await WebAssembly.instantiateStreaming(
+					fetch('./spaceinv.wasm'),{imports:{}})).module
+
+				wal = (await WebAssembly.instantiate(cachedModule)).exports
+				wal.init(100,100, alien_row,alien_col, 5,5, max_bullets, 1,1)
+
+				screen = document.getElementById("screen");
+				screen.bullet_list = [];
+				screen.alien_list = [];
+				player = document.getElementById("player");
+				player.x_pos = 50;
+				player.style.top = "90%"
+				
+				for(var i=0; i<max_bullets; i++){
+					var newDiv = document.createElement("div");
+					newDiv.className = "bullet";
+					newDiv.style.display = "none";
+					newDiv.bullet_num = i;
+
+					screen.appendChild(newDiv);
+					screen.bullet_list.push(newDiv);
+				}
+				
+				for(var i=0; i<(alien_col*alien_row); i++){
+					var newDiv = document.createElement("div");
+					newDiv.className = "alien";
+					newDiv.alien_num = i;
+					
+					console.log(wal.invasor_x(i)+" "+wal.invasor_y(i))
+					newDiv.style.top = wal.invasor_y(i) + "%";
+					newDiv.style.left = wal.invasor_x(i) + "%";
+					
+					newDiv.innerHTML = '<img src="./img/alien.gif" style="height: 100%; width: 100%; object-fit: contain"/>';
+
+					screen.appendChild(newDiv);
+					screen.alien_list.push(newDiv);
+					screen.alien_list[i].style.display = "inline";
+				}
+
+
+				window.addEventListener("keydown", (event)=>{
+					// console.log(`key=${event.key},code=${event.code}`);
+					switch(event.key){
+						case " ":
+							var b_num = wal.nueva_bala(player.x_pos + 4);
+							if(b_num > -1){
+								screen.bullet_list[b_num].style.left = (player.x_pos + 4) + "%";
+								screen.bullet_list[b_num].style.top = player.style.top;
+								screen.bullet_list[b_num].style.display = "inline";
+							}
+							
+							break;
+
+						case "a":
+							if(player.x_pos > 1)
+								player.x_pos -= 2;
+							player.style.left = player.x_pos + '%';
+							// event.stopPropagation();
+							break;
+
+						case "d":
+							if(player.x_pos < 97)
+								player.x_pos += 2;
+							player.style.left = player.x_pos + '%';
+							// event.stopPropagation();
+							break;
+					}
+				});
+				setTimeout("screenLoop();", 400);
+			}
+
+			function screenLoop(){
+				var resultado = wal.mueve_balas();
+				// console.log(resultado)
+				resultado += wal.mueve_invas();
+				// console.log(resultado)
+
+				if(resultado >= 10 ){
+					console.log("han ganado los marcianos");
+					screen.innerHTML = '<img src="./img/loose.png" style="height: 100%; width: 100%; object-fit: contain"/>';
+					new Audio('./img/game_over.m4a').play();
+					return;
+				}else if(resultado > 0){
+					console.log("ha ganado el jugador");
+					screen.innerHTML = '<img src="./img/win.png" style="height: 100%; width: 100%; object-fit: contain"/>';
+					new Audio('./img/win.m4a').play();
+					return;
+				}
+
+				for(var i=0; i<(alien_col*alien_row); i++){
+					if(wal.invasor_vivo(i)){
+						screen.alien_list[i].style.top = wal.invasor_y(i) + "%";
+						screen.alien_list[i].style.left = wal.invasor_x(i) + "%";
+					}else{
+						screen.alien_list[i].style.display = "none";
+					}
+				}
+
+
+				for(var i=0; i<max_bullets; i++){
+					if(wal.bala_viva(i)){
+						screen.bullet_list[i].style.top = wal.bala_y(i) + "%";
+					}else{
+						screen.bullet_list[i].style.display = "none";
+					}
+				}
+
+
+				// console.log("aaaa");
+				if(document.getElementById("player").style.backgroundColor == "blue"){
+					document.getElementById("player").style.backgroundColor = "red";
+				}else{
+					document.getElementById("player").style.backgroundColor = "blue";
+				}
+
+				setTimeout("screenLoop();", 400);
+			}
+		</script>
+		<style>
+			#screen{
+				width: 99%;
+				height: 80%;
+				position: absolute;
+				background: black;
+			}
+
+			#player{
+				width: 8%;
+				height: 8%;
+				position: absolute;
+				top: 90%;
+				left: 50%;
+				background: red;
+			}
+
+			.bullet{
+				width: 1%;
+				height: 1%;
+				position: absolute;
+				top: 5%;
+				left: 5%;
+				background: yellow;
+			}
+
+			.alien{
+				width: 5%;
+				height: 5%;
+				position: absolute;
+				top: 20%;
+				left: 10%;
+				background: #84ff00;
+			}
+
+		</style>
+	</head>
+	<body onload="startGame();">
+		<h1>Space Invaders</h1>
+		<p>1 hacer click (focus) en la pantalla negra; 2 controles: [espacio] - disparar | [a] - izquierda | [d] - derecha</p>
+
+		<div id ="screen" tabindex="-1">
+			<img src="./img/background.png" style="height: 100%; width: 100%; object-fit: contain"/>
+			<div id ="player">
+				<img src="./img/player.png" style="height: 100%; width: 100%; object-fit: contain"/>
+			</div>
+		</div>
+
+	</body>
+<html>
