@@ -1,3 +1,8 @@
+## Permisos
+La carpeta (NEB-frontend-p1-1.0) necesita lectura y ejecución (755); y la carpeta de medios (/img) necesita permisos de lectura (711). Dentro de la carpeta, tras extraer la release, son necesarios los comandos:
+chmod 755 .
+chmod 711 ./img/
+
 ## Compilar spaceinv.c
 Requisitos:
 >clang compiler-rt lld wasi-compiler-rt wasi-libc wasi-libc++   
