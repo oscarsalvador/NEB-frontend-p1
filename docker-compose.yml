@@ -7,3 +7,9 @@ services:
       - ./:/usr/share/nginx/html/
     ports:
       - "8081:80"
+  manjaro-wasm:
+    build: .
+    user: 1000:1000
+    working_dir: /src
+    volumes:
+      - ./:/src
